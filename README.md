@@ -8,13 +8,14 @@
 - Я пушу воркфлоу через REST API n8n. Секреты площадок (Gemini и т.д.) добавляешь сам в Credentials.
 
 ## Что построено
-- **WF #1 — `FoodGenius · 1 · Идея + сценарий (Gemini)`** (id `LISppXfjrbJLkbuv`, inactive).
-  Webhook → Brief (промпт) → Gemini → Parse. Возвращает JSON: topic, hook, scenes[visual/voiceover/onscreen], caption, hashtags, cta.
+- **WF #1 — `FoodGenius · 1 · Идея + сценарий (Gemini)`** (id `LISppXfjrbJLkbuv`, **активен, протестирован**).
+  Webhook → Brief (промпт) → Gemini (gemini-2.5-flash, retry x4) → Parse. Возвращает JSON: topic, hook, scenes[visual/voiceover/onscreen], caption, hashtags, cta.
+  Webhook: `POST https://solarn8n.su/webhook/foodgenius-gen`. Credential: `Gemini API key` (Header Auth, id `bTDe8ELfA3zxZPYE`).
   Исходник: `wf-1-idea-script.json`.
 
 ## Roadmap
 1. ✅ Подключение к n8n, разбор существующего паттерна (DeepSeek+AI Agent+Notion/Sheets+Telegram).
-2. ✅ WF #1: генератор идей+сценариев на Gemini. ← **обкатываем качество**
+2. ✅ WF #1: генератор идей+сценариев на Gemini — активен на сервере, протестирован. ← **докручиваем промпт**
 3. ⬜ WF #2: Veo — генерация видео-клипов по сценам (async, polling).
 4. ⬜ Сборка: склейка клипов + субтитры + озвучка (ffmpeg на Timeweb-сервере).
 5. ⬜ Ревью-гейт: первые 10-15 роликов в Google Drive на просмотр.
