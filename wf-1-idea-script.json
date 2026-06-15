@@ -12,7 +12,7 @@
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 300],
+      "position": [-200, 300],
       "webhookId": "foodgenius-gen"
     },
     {
@@ -20,9 +20,10 @@
         "assignments": {
           "assignments": [
             { "id": "b1", "name": "niche", "value": "питание, здоровое питание, рецепты, похудение, ЗОЖ", "type": "string" },
-            { "id": "b2", "name": "task", "value": "Выбери из трендов одну тему с максимальным виральным потенциалом и напиши под неё полный сценарий по схеме.", "type": "string" },
+            { "id": "b5", "name": "yt_query", "value": "здоровое питание рецепты похудение пп", "type": "string" },
+            { "id": "b2", "name": "task", "value": "Выбери одну тему с максимальным виральным потенциалом и напиши под неё полный сценарий по схеме.", "type": "string" },
             { "id": "b4", "name": "research_task", "value": "Через Google Поиск найди свежие тренды и залетающие форматы коротких вертикальных видео в нише питания, ЗОЖ, похудения, рецептов. Дай 4-6 актуальных тем. Для каждой: почему сейчас на волне, реальный факт или цифра, какой угол цепляет аудиторию. Кратко и по делу.", "type": "string" },
-            { "id": "b3", "name": "script_system", "value": "Ты вирусный контент-стратег в нише питания и ЗОЖ. Продвигаем FoodGenius — Telegram-бот и Mini App для планирования питания. Цель: рост охватов и подписчиков.\nТебе дают список актуальных трендов и реальных фактов. ОПИРАЙСЯ на них, не выдумывай. Выбери ОДНУ тему с максимальным виральным потенциалом, которую органично свяжешь с продуктом.\nФормат: короткое вертикальное видео (Shorts/Reels), сильный хук в первые 2 секунды, любопытство или неожиданный факт, динамика, понятная польза.\nПравила текста: активный залог, без канцелярита; без клише ('в современном мире', 'не секрет', 'давайте разберёмся'); без лишних наречий и тире ради драмы; конкретика и реальные цифры; разный ритм фраз.\nВерни СТРОГО JSON без markdown:\n{'topic': 'тема', 'angle': 'почему завирусится и на каком тренде основано', 'hook': 'текст первых 2 секунд', 'scenes': [{'visual': 'detailed English prompt for Veo, vertical 9:16, cinematic, no text on screen', 'voiceover': 'русский текст озвучки', 'onscreen': 'короткая подпись'}], 'caption': 'описание до 200 символов', 'hashtags': ['#тег'], 'cta': 'призыв перейти в бота FoodGenius'}\n3-5 сцен, общий хронометраж 20-40 секунд.", "type": "string" }
+            { "id": "b3", "name": "script_system", "value": "Ты вирусный контент-стратег в нише питания и ЗОЖ. Продвигаем FoodGenius — Telegram-бот и Mini App для планирования питания. Цель: рост охватов и подписчиков.\nТебе дают: (1) список реально залетевших Shorts ниши с просмотрами — изучи их хуки и форматы; (2) свежие тренды и факты из поиска. ОПИРАЙСЯ на эти данные, не выдумывай. Выбери ОДНУ тему с максимальным виральным потенциалом, которую органично свяжешь с продуктом.\nФормат: короткое вертикальное видео (Shorts/Reels), сильный хук в первые 2 секунды по образцу залетевших роликов, любопытство или неожиданный факт, динамика, понятная польза.\nПравила текста: активный залог, без канцелярита; без клише ('в современном мире', 'не секрет', 'давайте разберёмся'); без лишних наречий и тире ради драмы; конкретика и реальные цифры; разный ритм фраз.\nВерни СТРОГО JSON без markdown:\n{'topic': 'тема', 'angle': 'почему завирусится, на каком тренде и каком залетевшем формате основано', 'hook': 'текст первых 2 секунд', 'scenes': [{'visual': 'detailed English prompt for Veo, vertical 9:16, cinematic, no text on screen', 'voiceover': 'русский текст озвучки', 'onscreen': 'короткая подпись'}], 'caption': 'описание до 200 символов', 'hashtags': ['#тег'], 'cta': 'призыв перейти в бота FoodGenius'}\n3-5 сцен, общий хронометраж 20-40 секунд.", "type": "string" }
           ]
         },
         "options": {}
@@ -31,7 +32,78 @@
       "name": "Brief",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [220, 300]
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/youtube/v3/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "part", "value": "snippet" },
+            { "name": "q", "value": "={{ $('Brief').item.json.yt_query }}" },
+            { "name": "type", "value": "video" },
+            { "name": "videoDuration", "value": "short" },
+            { "name": "order", "value": "viewCount" },
+            { "name": "regionCode", "value": "RU" },
+            { "name": "relevanceLanguage", "value": "ru" },
+            { "name": "maxResults", "value": "10" },
+            { "name": "publishedAfter", "value": "={{ $now.minus({ days: 45 }).toISO() }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "w3",
+      "name": "YT search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 300],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpQueryAuth": { "id": "3zDDHequPBP5JRDI", "name": "YouTube API key" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/youtube/v3/videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "part", "value": "snippet,statistics" },
+            { "name": "id", "value": "={{ $('YT search').item.json.items.map(i => i.id.videoId).filter(Boolean).join(',') }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "w4",
+      "name": "YT stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 300],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpQueryAuth": { "id": "3zDDHequPBP5JRDI", "name": "YouTube API key" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.first().json.items || [];\nconst rows = items.map(v => ({ title: v.snippet.title, views: parseInt((v.statistics && v.statistics.viewCount) || '0', 10) })).sort((a, b) => b.views - a.views);\nconst text = rows.slice(0, 10).map((r, i) => `${i + 1}. ${r.title} — ${r.views.toLocaleString('ru-RU')} просмотров`).join('\\n');\nreturn [{ json: { yt_text: text, yt_list: rows } }];"
+      },
+      "id": "w5",
+      "name": "YT top",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 300]
     },
     {
       "parameters": {
@@ -44,11 +116,11 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Сегодня ' + $now.toFormat('dd.MM.yyyy') + '. ' + $('Brief').item.json.research_task + ' Ниша: ' + $('Brief').item.json.niche }] }], tools: [{ google_search: {} }] }) }}",
         "options": {}
       },
-      "id": "w3",
+      "id": "w6",
       "name": "Research",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [440, 300],
+      "position": [800, 300],
       "retryOnFail": true,
       "maxTries": 4,
       "waitBetweenTries": 3000,
@@ -64,14 +136,14 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ system_instruction: { parts: [{ text: $('Brief').item.json.script_system }] }, contents: [{ role: 'user', parts: [{ text: 'Актуальные тренды и факты (опирайся на них, не выдумывай):\\n' + $('Research').item.json.candidates[0].content.parts.map(p => p.text).filter(Boolean).join('\\n') + '\\n\\n' + $('Brief').item.json.task }] }], generationConfig: { temperature: 0.9, responseMimeType: 'application/json' } }) }}",
+        "jsonBody": "={{ JSON.stringify({ system_instruction: { parts: [{ text: $('Brief').item.json.script_system }] }, contents: [{ role: 'user', parts: [{ text: 'Реально залетевшие Shorts ниши (по просмотрам, изучи хуки и форматы):\\n' + $('YT top').item.json.yt_text + '\\n\\nСвежие тренды и факты из Google Поиска:\\n' + $('Research').item.json.candidates[0].content.parts.map(p => p.text).filter(Boolean).join('\\n') + '\\n\\n' + $('Brief').item.json.task }] }], generationConfig: { temperature: 0.9, responseMimeType: 'application/json' } }) }}",
         "options": {}
       },
-      "id": "w4",
+      "id": "w7",
       "name": "Gemini script",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [660, 300],
+      "position": [1000, 300],
       "retryOnFail": true,
       "maxTries": 4,
       "waitBetweenTries": 3000,
@@ -81,18 +153,21 @@
     },
     {
       "parameters": {
-        "jsCode": "const raw = $input.first().json.candidates[0].content.parts[0].text;\nconst clean = raw.trim().replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();\nconst script = JSON.parse(clean);\nlet sources = [];\ntry {\n  const gm = $('Research').first().json.candidates[0].groundingMetadata;\n  const chunks = (gm && gm.groundingChunks) || [];\n  sources = chunks.map(c => c.web && c.web.uri).filter(Boolean);\n} catch (e) {}\nscript.sources = sources;\nreturn [{ json: script }];"
+        "jsCode": "const raw = $input.first().json.candidates[0].content.parts[0].text;\nconst clean = raw.trim().replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();\nconst script = JSON.parse(clean);\nlet sources = [];\ntry {\n  const gm = $('Research').first().json.candidates[0].groundingMetadata;\n  const chunks = (gm && gm.groundingChunks) || [];\n  sources = chunks.map(c => c.web && c.web.uri).filter(Boolean);\n} catch (e) {}\nscript.sources = sources;\nscript.youtube_refs = $('YT top').first().json.yt_list.slice(0, 5);\nreturn [{ json: script }];"
       },
-      "id": "w5",
+      "id": "w8",
       "name": "Parse script",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, 300]
+      "position": [1200, 300]
     }
   ],
   "connections": {
     "Webhook": { "main": [[{ "node": "Brief", "type": "main", "index": 0 }]] },
-    "Brief": { "main": [[{ "node": "Research", "type": "main", "index": 0 }]] },
+    "Brief": { "main": [[{ "node": "YT search", "type": "main", "index": 0 }]] },
+    "YT search": { "main": [[{ "node": "YT stats", "type": "main", "index": 0 }]] },
+    "YT stats": { "main": [[{ "node": "YT top", "type": "main", "index": 0 }]] },
+    "YT top": { "main": [[{ "node": "Research", "type": "main", "index": 0 }]] },
     "Research": { "main": [[{ "node": "Gemini script", "type": "main", "index": 0 }]] },
     "Gemini script": { "main": [[{ "node": "Parse script", "type": "main", "index": 0 }]] }
   },
