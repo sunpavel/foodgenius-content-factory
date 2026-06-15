@@ -12,11 +12,15 @@
   Webhook → Brief (промпт) → Gemini (gemini-2.5-flash, retry x4) → Parse. Возвращает JSON: topic, hook, scenes[visual/voiceover/onscreen], caption, hashtags, cta.
   Webhook: `POST https://solarn8n.su/webhook/foodgenius-gen`. Credential: `Gemini API key` (Header Auth, id `bTDe8ELfA3zxZPYE`).
   Исходник: `wf-1-idea-script.json`.
+- **WF #2 — `FoodGenius · 2 · Veo клип`** (id `Dm1J5areiV7qiTDC`).
+  Webhook → Veo start → **Wait-петля опроса операции внутри n8n** → Download → Extract. Полностью server-side. Один fast-клип проверен: video/mp4 ~2.33 MB, veo-3.0-fast.
+  Gemini credential — `Gemini API key (paid)` (id `dh36tHYBei17CBTc`, проект 747100677929, paid tier). Исходник: `wf-2-veo.json`.
+  Защита: узел `Started?` не даёт уйти в бесконечный опрос, если Veo вернул ошибку.
 
 ## Roadmap
 1. ✅ Подключение к n8n, разбор существующего паттерна (DeepSeek+AI Agent+Notion/Sheets+Telegram).
 2. ✅ WF #1: генератор идей+сценариев на Gemini — активен на сервере, протестирован. ← **докручиваем промпт**
-3. ⬜ WF #2: Veo — генерация видео-клипов по сценам (async, polling).
+3. ✅ WF #2: Veo — один клип генерится на сервере (self-contained, Wait-loop опрос). Дальше: генерация по всем сценам сценария.
 4. ⬜ Сборка: склейка клипов + субтитры + озвучка (ffmpeg на Timeweb-сервере).
 5. ⬜ Ревью-гейт: первые 10-15 роликов в Google Drive на просмотр.
 6. ⬜ Автозалив: старт с YouTube Shorts (чище API, квота ~6/сутки), затем Instagram Reels.

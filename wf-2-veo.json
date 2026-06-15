@@ -1,0 +1,175 @@
+{
+  "name": "FoodGenius · 2 · Veo клип",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "veo-gen",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "v1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-200, 300],
+      "webhookId": "veo-gen"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "c1", "name": "prompt", "value": "Dynamic fast-paced montage of high-fiber foods: a vibrant bowl of berries with oats, close-up of crunchy broccoli, lentils scooped onto a plate. Vertical 9:16, cinematic, bright, no text on screen.", "type": "string" },
+            { "id": "c2", "name": "model", "value": "veo-3.0-fast-generate-001", "type": "string" },
+            { "id": "c3", "name": "aspect", "value": "9:16", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "v2",
+      "name": "Clip brief",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $('Clip brief').item.json.model }}:predictLongRunning",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ instances: [{ prompt: $('Clip brief').item.json.prompt }], parameters: { aspectRatio: $('Clip brief').item.json.aspect } }) }}",
+        "options": { "response": { "response": { "fullResponse": true, "neverError": true } } }
+      },
+      "id": "v3",
+      "name": "Veo start",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "bTDe8ELfA3zxZPYE", "name": "Gemini API key" }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "seconds",
+        "resume": "timeInterval"
+      },
+      "id": "v4",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [420, 300],
+      "webhookId": "veo-wait"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/{{ $('Veo start').item.json.body.name }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": { "response": { "response": { "fullResponse": true, "neverError": true } } }
+      },
+      "id": "v5",
+      "name": "Veo poll",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "bTDe8ELfA3zxZPYE", "name": "Gemini API key" }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose", "version": 2 },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "d1",
+              "leftValue": "={{ $json.body.done }}",
+              "rightValue": "",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "v6",
+      "name": "Done?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Veo poll').item.json.body.response.generateVideoResponse.generatedSamples[0].video.uri }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": { "response": { "response": { "responseFormat": "file" } } }
+      },
+      "id": "v7",
+      "name": "Download",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1080, 200],
+      "credentials": {
+        "httpHeaderAuth": { "id": "bTDe8ELfA3zxZPYE", "name": "Gemini API key" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const poll = $('Veo poll').item.json.body;\nconst uri = poll.response.generateVideoResponse.generatedSamples[0].video.uri;\nconst meta = ($('Download').first().binary || {}).data || {};\nreturn [{ json: { done: true, model: $('Clip brief').item.json.model, uri, mime: meta.mimeType || null, sizeBytes: meta.fileSize || null } }];"
+      },
+      "id": "v8",
+      "name": "Extract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1300, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose", "version": 2 },
+          "combinator": "and",
+          "conditions": [
+            { "id": "s1", "leftValue": "={{ $json.body.name }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true } }
+          ]
+        },
+        "options": {}
+      },
+      "id": "v9",
+      "name": "Started?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [410, 480]
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $('Veo start').item.json.body || {};\nreturn [{ json: { ok: false, error: b.error || b } }];"
+      },
+      "id": "v10",
+      "name": "Veo failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 480]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Clip brief", "type": "main", "index": 0 }]] },
+    "Clip brief": { "main": [[{ "node": "Veo start", "type": "main", "index": 0 }]] },
+    "Veo start": { "main": [[{ "node": "Started?", "type": "main", "index": 0 }]] },
+    "Started?": { "main": [[{ "node": "Wait", "type": "main", "index": 0 }], [{ "node": "Veo failed", "type": "main", "index": 0 }]] },
+    "Wait": { "main": [[{ "node": "Veo poll", "type": "main", "index": 0 }]] },
+    "Veo poll": { "main": [[{ "node": "Done?", "type": "main", "index": 0 }]] },
+    "Done?": { "main": [[{ "node": "Download", "type": "main", "index": 0 }], [{ "node": "Wait", "type": "main", "index": 0 }]] },
+    "Download": { "main": [[{ "node": "Extract", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
