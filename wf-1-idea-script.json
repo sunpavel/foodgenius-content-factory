@@ -1,0 +1,74 @@
+{
+  "name": "FoodGenius · 1 · Идея + сценарий (Gemini)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "foodgenius-gen",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "w1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "foodgenius-gen"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "b1", "name": "niche", "value": "питание, здоровое питание, рецепты, планирование рациона", "type": "string" },
+            { "id": "b2", "name": "task", "value": "Придумай одну новую вирусную идею для короткого вертикального видео и напиши под неё полный сценарий по схеме.", "type": "string" },
+            { "id": "b3", "name": "system", "value": "Ты вирусный контент-стратег в нише питания и здорового образа жизни. Продвигаем продукт FoodGenius — Telegram-бот и Mini App для планирования питания. Цель контента: рост охватов и подписчиков.\nДелаешь короткие вертикальные видео (YouTube Shorts, Reels): сильный хук в первые 2 секунды, любопытство или неожиданный факт, динамика, понятная польза.\nПравила текста: активный залог, без канцелярита; без клише ('в современном мире', 'не секрет', 'давайте разберёмся'); без лишних наречий и тире ради драмы; конкретика, цифры, примеры; разный ритм фраз.\nВерни СТРОГО JSON без markdown и без пояснений со структурой:\n{'topic': 'тема', 'angle': 'почему завирусится', 'hook': 'текст первых 2 секунд', 'scenes': [{'visual': 'detailed English prompt for Veo, vertical 9:16, cinematic, no text on screen', 'voiceover': 'русский текст озвучки сцены', 'onscreen': 'короткая подпись на экране'}], 'caption': 'описание под видео до 200 символов', 'hashtags': ['#тег'], 'cta': 'призыв перейти в бота FoodGenius'}\nСделай 3-5 сцен, общий хронометраж 20-40 секунд.", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "w2",
+      "name": "Brief",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ system_instruction: { parts: [{ text: $('Brief').item.json.system }] }, contents: [{ role: 'user', parts: [{ text: $('Brief').item.json.task + ' Ниша: ' + $('Brief').item.json.niche }] }], generationConfig: { temperature: 1, responseMimeType: 'application/json' } }) }}",
+        "options": {}
+      },
+      "id": "w3",
+      "name": "Gemini script",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "Gemini API key" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.candidates[0].content.parts[0].text;\nconst clean = raw.trim().replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();\nconst script = JSON.parse(clean);\nreturn [{ json: script }];"
+      },
+      "id": "w4",
+      "name": "Parse script",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Brief", "type": "main", "index": 0 }]] },
+    "Brief": { "main": [[{ "node": "Gemini script", "type": "main", "index": 0 }]] },
+    "Gemini script": { "main": [[{ "node": "Parse script", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

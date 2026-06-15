@@ -1,0 +1,12 @@
+# секреты — НИКОГДА не коммитим
+.env
+*.env
+*.key
+*.pem
+credentials*.json
+
+# мусор
+.DS_Store
+node_modules/
+*.log
+tmp/
