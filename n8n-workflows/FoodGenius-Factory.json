@@ -1,0 +1,116 @@
+{
+  "name": "FoodGenius-Factory",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "fg-factory", "responseMode": "lastNode", "options": {} },
+      "id": "f1", "name": "▶ Research (webhook)", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [-600, 200], "webhookId": "fg-factory"
+    },
+    {
+      "parameters": {
+        "assignments": { "assignments": [
+          { "id": "p1", "name": "sc_query", "value": "пп рецепты похудение меню на неделю", "type": "string" },
+          { "id": "p2", "name": "perplexity_query", "value": "Свежие (2 недели) тренды, боли и инфоповоды РФ вокруг питания, ЗОЖ, фитнеса, похудения, меню на неделю и списков покупок. 8-12 пунктов, кратко, с цифрами.", "type": "string" },
+          { "id": "p3", "name": "posts_db", "value": "38186abe-0a40-8183-88eb-ff0c97d97443", "type": "string" },
+          { "id": "p4", "name": "strategist_system", "value": "Ты вирусный контент-стратег FoodGenius AI (Telegram-бот: меню на неделю + рецепты + список покупок под спорт/семью/бюджет). Отстройка от конкурентов (используй ОДИН угол): 1) планируй, а не считай (против фото-трекеров); 2) меню под тренировки, не абстрактные ккал; 3) одно меню на всю семью с разными порциями; 4) список покупок собирается сам. Запрещено: счёт калорий по фото, дневник питания.\nНа входе: свежие тренды (Perplexity) + реально залетевшие виральные форматы конкурентов с просмотрами. Выбери ОДНУ лучшую идею для короткого вертикального видео (YouTube Shorts): возьми один угол отстройки и адаптируй хук/структуру залетевшего формата.\nОцени 1-10: trend, usefulness, viral, product_fit.\nВерни СТРОГО JSON: {topic, angle, audience_segment (одно: спорт|похудение|семья|дети|занятые), food_category (одно: рецепт|меню|бюджет|ПП|meal-prep|сезонное|ошибки/мифы|демо-бота), trend_score, usefulness_score, viral_score, product_fit_score, why_now, based_on (какой формат конкурента адаптирован)}. Без markdown.", "type": "string" },
+          { "id": "p5", "name": "concept_system", "value": "Ты сценарист рекламных Shorts для FoodGenius AI. На входе — выбранная идея. Напиши ПРОДУМАННЫЙ сценарий вертикального ролика 15-30 сек: сильный хук (0-2с), проблема, поворот (FoodGenius решает), пекшот с CTA. Живой текст, без канцелярита и клише, разговорно.\nVeo-промпты сцен — на английском, конкретно: кто в кадре, действие, эмоция, камера, свет; 9:16, кинематографично, БЕЗ текста в кадре.\nВерни СТРОГО JSON: {hook_text, music_mood, scenes:[{dur (сек), veo_prompt, onscreen_text (рус), voiceover_part (рус)}], caption (до 200 симв), hashtags:[\"#тег\"], cta}. 3-5 сцен. Без markdown.", "type": "string" }
+        ] },
+        "options": {}
+      },
+      "id": "f2", "name": "Config", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [-400, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST", "url": "https://api.perplexity.ai/chat/completions",
+        "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth",
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'sonar', messages: [{ role: 'system', content: 'Ресёрчер трендов питания/ЗОЖ/фитнеса РФ. Кратко, с цифрами.' }, { role: 'user', content: $('Config').item.json.perplexity_query }], max_tokens: 800, temperature: 0.4 }) }}",
+        "options": {}
+      },
+      "id": "f3", "name": "Perplexity", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [-200, 100],
+      "retryOnFail": true, "maxTries": 3, "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "credentials": { "httpHeaderAuth": { "id": "ds1CYMradGEohKUt", "name": "Perplexity API" } }
+    },
+    {
+      "parameters": {
+        "method": "GET", "url": "https://api.scrapecreators.com/v1/tiktok/search/keyword",
+        "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": { "parameters": [ { "name": "query", "value": "={{ $('Config').item.json.sc_query }}" } ] },
+        "options": {}
+      },
+      "id": "f4", "name": "ScrapeCreators", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [-200, 300],
+      "retryOnFail": true, "maxTries": 3, "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "credentials": { "httpHeaderAuth": { "id": "hdNN3rC0W3kak6TQ", "name": "ScrapeCreators API" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const sc = $('ScrapeCreators').first().json || {};\nconst list = (sc.search_item_list||[]).map(it=>{const a=it.aweme_info||{};return {d:(a.desc||'').trim(),v:(a.statistics||{}).play_count||0};}).filter(x=>x.d).sort((a,b)=>b.v-a.v).slice(0,8);\nconst signals = list.map((r,i)=>`${i+1}. [${r.v.toLocaleString('ru-RU')}] ${r.d}`).join('\\n') || '(нет данных)';\nlet trends='(нет)';\ntry{ trends = $('Perplexity').first().json.choices[0].message.content; }catch(e){}\nreturn [{ json: { signals_text: signals, trends_text: trends } }];"
+      },
+      "id": "f5", "name": "Research text", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [0, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST", "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth",
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ system_instruction: { parts: [{ text: $('Config').item.json.strategist_system }] }, contents: [{ role: 'user', parts: [{ text: 'Свежие тренды:\\n' + $json.trends_text + '\\n\\nВиральные форматы конкурентов:\\n' + $json.signals_text }] }], generationConfig: { temperature: 0.8, responseMimeType: 'application/json' } }) }}",
+        "options": {}
+      },
+      "id": "f6", "name": "Strategist", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [200, 200],
+      "retryOnFail": true, "maxTries": 4, "waitBetweenTries": 3000,
+      "credentials": { "httpHeaderAuth": { "id": "dh36tHYBei17CBTc", "name": "Gemini API key (paid)" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw=$input.first().json.candidates[0].content.parts[0].text;\nconst idea=JSON.parse(raw.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim());\nconst t=+idea.trend_score||0,u=+idea.usefulness_score||0,v=+idea.viral_score||0,pf=+idea.product_fit_score||0;\nidea.total=+(t*0.2+u*0.3+v*0.25+pf*0.25).toFixed(2);\nconst s=(idea.topic||'').toLowerCase().replace(/[^0-9a-zа-яё ]/gi,'').replace(/\\s+/g,' ').trim();\nlet h=5381; for(let i=0;i<s.length;i++){h=(((h<<5)+h)+s.charCodeAt(i))&0xffffffff;}\nidea.topic_hash='h'+(h>>>0).toString(16);\nidea.start_code='YT'+(h>>>0).toString(16).toUpperCase().slice(0,6);\nreturn [{ json: idea }];"
+      },
+      "id": "f7", "name": "Parse idea", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [400, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST", "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth",
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ system_instruction: { parts: [{ text: $('Config').item.json.concept_system }] }, contents: [{ role: 'user', parts: [{ text: 'Идея: ' + JSON.stringify({ topic: $json.topic, angle: $json.angle, audience_segment: $json.audience_segment, food_category: $json.food_category }) }] }], generationConfig: { temperature: 0.9, responseMimeType: 'application/json' } }) }}",
+        "options": {}
+      },
+      "id": "f8", "name": "Concept", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [600, 200],
+      "retryOnFail": true, "maxTries": 4, "waitBetweenTries": 3000,
+      "credentials": { "httpHeaderAuth": { "id": "dh36tHYBei17CBTc", "name": "Gemini API key (paid)" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const idea=$('Parse idea').first().json;\nconst raw=$input.first().json.candidates[0].content.parts[0].text;\nconst concept=JSON.parse(raw.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim());\nconst rt=v=>({rich_text:[{text:{content:String(v==null?'':v).slice(0,1900)}}]});\nconst link='https://t.me/foodgenius_ai_bot?start=ref_'+idea.start_code;\nconst caption=(concept.caption||idea.topic)+'\\n\\n'+(concept.cta||'')+' '+link;\nconst props={\n  'title':{title:[{text:{content:String(idea.topic||'без темы').slice(0,1900)}}]},\n  'status':{select:{name:'Needs Review'}},\n  'platform':{select:{name:'youtube'}},\n  'content_format':rt('video/shorts'),\n  'post_text':rt(concept.hook_text||''),\n  'final_text':rt(JSON.stringify(concept)),\n  'cta':rt(concept.cta||''),\n  'start_code':rt(idea.start_code),\n  'target_audience':{select:{name:String(idea.audience_segment||'занятые').split('|')[0].trim()}},\n  'post_hash':rt(idea.topic_hash),\n  'created_at':{date:{start:new Date().toISOString()}},\n  'updated_at':{date:{start:new Date().toISOString()}}\n};\nreturn [{ json: { topic: idea.topic, total: idea.total, start_code: idea.start_code, caption, notion_props: props } }];"
+      },
+      "id": "f9", "name": "Build post", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [800, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST", "url": "https://api.notion.com/v1/pages",
+        "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [ { "name": "Notion-Version", "value": "2022-06-28" } ] },
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ parent: { database_id: $('Config').first().json.posts_db }, properties: $json.notion_props }) }}",
+        "options": {}
+      },
+      "id": "f10", "name": "Notion: Needs Review", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1000, 200],
+      "retryOnFail": true, "maxTries": 3, "waitBetweenTries": 1500,
+      "credentials": { "httpHeaderAuth": { "id": "GOH6jHeJP5mmYapj", "name": "Notion FoodGenius (HTTP)" } }
+    }
+  ],
+  "connections": {
+    "▶ Research (webhook)": { "main": [[{ "node": "Config", "type": "main", "index": 0 }]] },
+    "Config": { "main": [[{ "node": "Perplexity", "type": "main", "index": 0 }]] },
+    "Perplexity": { "main": [[{ "node": "ScrapeCreators", "type": "main", "index": 0 }]] },
+    "ScrapeCreators": { "main": [[{ "node": "Research text", "type": "main", "index": 0 }]] },
+    "Research text": { "main": [[{ "node": "Strategist", "type": "main", "index": 0 }]] },
+    "Strategist": { "main": [[{ "node": "Parse idea", "type": "main", "index": 0 }]] },
+    "Parse idea": { "main": [[{ "node": "Concept", "type": "main", "index": 0 }]] },
+    "Concept": { "main": [[{ "node": "Build post", "type": "main", "index": 0 }]] },
+    "Build post": { "main": [[{ "node": "Notion: Needs Review", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
