@@ -317,13 +317,13 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filter: { and: [ { property:'status', select:{ equals:'Ready' } }, { property:'external_post_id', rich_text:{ is_empty:true } } ] }, page_size: 1 }) }}",
+        "jsonBody": "={{ JSON.stringify({ filter:{ and:[ {property:'status',select:{equals:'Ready'}}, {property:'external_post_id',rich_text:{is_empty:true}} ] }, page_size:1 }) }}",
         "options": {}
       }
     },
     {
       "id": "v3",
-      "name": "To item",
+      "name": "Parse concept",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -331,69 +331,74 @@
         700
       ],
       "parameters": {
-        "jsCode": "const res=($input.first().json.results)||[];\nif(!res.length){ return []; }\nconst p=res[0]; const pr=p.properties;\nconst g=(n,t)=>{const x=pr[n]||{}; if(t=='title')return (x.title||[]).map(z=>z.plain_text).join(''); if(t=='rt')return (x.rich_text||[]).map(z=>z.plain_text).join(''); return '';};\nlet concept={}; try{ concept=JSON.parse(g('final_text','rt')); }catch(e){}\nconst scenes=concept.scenes||[];\nconst veo=(scenes[0]&&scenes[0].veo_prompt)||(g('title','title')+', vertical 9:16, cinematic');\nconst title=g('title','title').slice(0,95);\nconst sc=g('start_code','rt');\nconst desc=(concept.caption||title)+'\\n\\n'+(concept.cta||'')+'\\nhttps://t.me/foodgenius_ai_bot?start=ref_'+sc+'\\n\\n'+((concept.hashtags||[]).join(' '))+' #shorts';\nreturn [{ json: { page_id:p.id, title, veo:veo, description:desc, start_code:sc } }];"
+        "jsCode": "const res=($input.first().json.results)||[];\nif(!res.length){return [];}\nconst p=res[0]; const pr=p.properties;\nconst g=(n,t)=>{const x=pr[n]||{}; if(t=='title')return (x.title||[]).map(z=>z.plain_text).join(''); if(t=='rt')return (x.rich_text||[]).map(z=>z.plain_text).join(''); return '';};\nlet c={}; try{ c=JSON.parse(g('final_text','rt')); }catch(e){}\nconst scenes=(c.scenes||[]).map(s=>({footage_query:s.footage_query||'healthy food cooking', onscreen_text:s.onscreen_text||'', dur:s.dur||3.5}));\nreturn [{json:{page_id:p.id, title:g('title','title').slice(0,95), start_code:g('start_code','rt'), music_mood:(c.music_mood||'upbeat positive'), caption:(c.caption||g('title','title')), cta:(c.cta||''), scenes}}];"
       }
     },
     {
       "id": "v4",
-      "name": "Veo start",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "name": "Split scenes",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
       "position": [
         0,
         700
       ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "dh36tHYBei17CBTc",
-          "name": "Gemini API key (paid)"
-        }
-      },
       "parameters": {
-        "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/veo-3.0-fast-generate-001:predictLongRunning",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ instances:[{ prompt: $json.veo }], parameters:{ aspectRatio:'9:16' } }) }}",
-        "options": {
-          "response": {
-            "response": {
-              "fullResponse": true,
-              "neverError": true
-            }
-          }
-        }
+        "fieldToSplitOut": "scenes",
+        "options": {}
       }
     },
     {
       "id": "v5",
-      "name": "Started?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
+      "name": "Pexels",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         200,
         700
       ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "sqU0kye8KiCYCCaA",
+          "name": "Pexels API"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500,
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "typeValidation": "loose",
-            "version": 2
-          },
-          "combinator": "and",
-          "conditions": [
+        "method": "GET",
+        "url": "https://api.pexels.com/videos/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
             {
-              "id": "c",
-              "leftValue": "={{ $json.body.name }}",
-              "rightValue": "",
-              "operator": {
-                "type": "string",
-                "operation": "notEmpty",
-                "singleValue": true
-              }
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.footage_query }}"
+            },
+            {
+              "name": "orientation",
+              "value": "portrait"
+            },
+            {
+              "name": "per_page",
+              "value": "5"
+            },
+            {
+              "name": "size",
+              "value": "medium"
             }
           ]
         },
@@ -402,23 +407,20 @@
     },
     {
       "id": "v6",
-      "name": "Wait",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
+      "name": "Pick clip",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         400,
         700
       ],
-      "webhookId": "fg-veo-wait",
       "parameters": {
-        "amount": 15,
-        "unit": "seconds",
-        "resume": "timeInterval"
+        "jsCode": "const ress=$input.all(); const splits=$('Split scenes').all(); const scenes=[];\nfor(let i=0;i<ress.length;i++){ const d=ress[i].json||{}; const vids=d.videos||[]; let url=null;\n for(const v of vids){ let files=(v.video_files||[]).filter(f=>f.height>f.width); files=files.filter(f=>f.height>=1000&&f.height<=1920); files.sort((a,b)=>a.height-b.height); if(files.length){url=files[files.length-1].link;break;} }\n const sc=(splits[i]||{}).json||{}; if(url) scenes.push({url, onscreen_text:sc.onscreen_text||'', dur:sc.dur||3.5}); }\nreturn [{json:{scenes}}];"
       }
     },
     {
       "id": "v7",
-      "name": "Veo poll",
+      "name": "Jamendo",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -426,53 +428,55 @@
         700
       ],
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "dh36tHYBei17CBTc",
-          "name": "Gemini API key (paid)"
+        "httpQueryAuth": {
+          "id": "zAKGouuGpwe0Ux0C",
+          "name": "Jamendo API"
         }
       },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500,
       "parameters": {
         "method": "GET",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/{{ $('Veo start').item.json.body.name }}",
+        "url": "https://api.jamendo.com/v3.0/tracks/",
         "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "response": {
-            "response": {
-              "fullResponse": true,
-              "neverError": true
-            }
-          }
-        }
-      }
-    },
-    {
-      "id": "v8",
-      "name": "Done?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        800,
-        700
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "typeValidation": "loose",
-            "version": 2
-          },
-          "combinator": "and",
-          "conditions": [
+        "genericAuthType": "httpQueryAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
             {
-              "id": "c",
-              "leftValue": "={{ $json.body.done }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "format",
+              "value": "json"
+            },
+            {
+              "name": "limit",
+              "value": "5"
+            },
+            {
+              "name": "order",
+              "value": "popularity_total"
+            },
+            {
+              "name": "vocalinstrumental",
+              "value": "instrumental"
+            },
+            {
+              "name": "audioformat",
+              "value": "mp32"
+            },
+            {
+              "name": "fuzzytags",
+              "value": "={{ $('Parse concept').first().json.music_mood }}"
             }
           ]
         },
@@ -480,42 +484,60 @@
       }
     },
     {
+      "id": "v8",
+      "name": "Build job",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        700
+      ],
+      "parameters": {
+        "jsCode": "const pc=$('Parse concept').first().json; const scenes=$('Pick clip').first().json.scenes||[];\nlet music_url=null, music_attr='';\ntry{ const tr=($input.first().json.results||[]).find(t=>t.audio); if(tr){ music_url=tr.audio; music_attr='Музыка: '+tr.name+' — '+tr.artist_name+' (Jamendo)'; } }catch(e){}\nconst job={scenes, packshot:{text:'FoodGenius', cta:(pc.cta||'Бесплатный помощник — ссылка в описании'), dur:2.5}};\nif(music_url) job.music_url=music_url;\nconst job_b64=Buffer.from(JSON.stringify(job)).toString('base64');\nconst link='https://t.me/foodgenius_ai_bot?start=ref_'+pc.start_code;\nconst description=(pc.caption||pc.title)+'\\n\\n'+(pc.cta||'')+'\\n'+link+'\\n\\n'+music_attr+'\\n#shorts';\nreturn [{json:{job_b64, title:pc.title, description, page_id:pc.page_id}}];"
+      }
+    },
+    {
       "id": "v9",
-      "name": "Download clip",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "name": "SSH render",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
       "position": [
         1000,
-        620
+        700
       ],
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "dh36tHYBei17CBTc",
-          "name": "Gemini API key (paid)"
+        "sshPassword": {
+          "id": "D1sEMbXOFTU2jtFy",
+          "name": "Timeweb host SSH"
         }
       },
       "parameters": {
-        "method": "GET",
-        "url": "={{ $('Veo poll').item.json.body.response.generateVideoResponse.generatedSamples[0].video.uri }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "file"
-            }
-          }
-        }
+        "resource": "command",
+        "command": "=echo '{{ $json.job_b64 }}' | base64 -d > /opt/foodgenius/render/in/job_live.json && cd /opt/foodgenius/render && python3 render_video.py in/job_live.json out/live.mp4 >/dev/null 2>&1; base64 -w0 out/live.mp4",
+        "cwd": "/opt/foodgenius/render"
       }
     },
     {
       "id": "v10",
+      "name": "Decode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        700
+      ],
+      "parameters": {
+        "jsCode": "const b64=(($input.first().json.stdout)||'').trim(); if(!b64) throw new Error('empty render output');\nconst buf=Buffer.from(b64,'base64');\nconst bin=await this.helpers.prepareBinaryData(buf,'foodgenius_shorts.mp4','video/mp4');\nreturn [{json:{size:buf.length}, binary:{data:bin}}];"
+      }
+    },
+    {
+      "id": "v11",
       "name": "YouTube upload",
       "type": "n8n-nodes-base.youTube",
       "typeVersion": 1,
       "position": [
-        1200,
-        620
+        1400,
+        700
       ],
       "credentials": {
         "youTubeOAuth2Api": {
@@ -526,24 +548,24 @@
       "parameters": {
         "resource": "video",
         "operation": "upload",
-        "title": "={{ $('To item').item.json.title }}",
+        "title": "={{ $('Build job').item.json.title }}",
         "regionCode": "RU",
         "categoryId": "22",
         "binaryProperty": "data",
         "options": {
-          "description": "={{ $('To item').item.json.description }}",
+          "description": "={{ $('Build job').item.json.description }}",
           "privacyStatus": "unlisted"
         }
       }
     },
     {
-      "id": "v11",
-      "name": "Mark published",
+      "id": "v12",
+      "name": "Mark Published",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1400,
-        620
+        1600,
+        700
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -553,7 +575,7 @@
       },
       "parameters": {
         "method": "PATCH",
-        "url": "=https://api.notion.com/v1/pages/{{ $('To item').item.json.page_id }}",
+        "url": "=https://api.notion.com/v1/pages/{{ $('Build job').item.json.page_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -567,18 +589,18 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ properties: { status: { select: { name: 'Published' } }, external_post_id: { rich_text: [ { text: { content: String($('YouTube upload').item.json.uploadId || '') } } ] }, published_at: { date: { start: $now.toISO() } } } }) }}",
+        "jsonBody": "={{ JSON.stringify({ properties:{ status:{select:{name:'Published'}}, external_post_id:{rich_text:[{text:{content:String($('YouTube upload').item.json.id||'')}}]}, published_at:{date:{start:new Date().toISOString()}} } }) }}",
         "options": {}
       }
     },
     {
-      "id": "v12",
+      "id": "v13",
       "name": "TG alert",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1600,
-        620
+        1800,
+        700
       ],
       "credentials": {
         "telegramApi": {
@@ -588,25 +610,8 @@
       },
       "parameters": {
         "chatId": "109790719",
-        "text": "=✅ YouTube Shorts опубликован: {{ $('To item').item.json.title }}\nhttps://youtu.be/{{ $('YouTube upload').item.json.uploadId }}",
+        "text": "=✅ YouTube Shorts: {{ $('Build job').item.json.title }}\\nhttps://youtu.be/{{ $('YouTube upload').item.json.id }}",
         "additionalFields": {}
-      }
-    },
-    {
-      "id": "v0",
-      "name": "▶ Video (webhook)",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        -600,
-        860
-      ],
-      "webhookId": "fg-video-run",
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "fg-video-run",
-        "responseMode": "onReceived",
-        "options": {}
       }
     }
   ],
@@ -710,92 +715,106 @@
         ]
       ]
     },
+    "▶ Video (Schedule, Ready)": {
+      "main": [
+        [
+          {
+            "node": "Get Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Get Ready": {
       "main": [
         [
           {
-            "node": "To item",
+            "node": "Parse concept",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "To item": {
+    "Parse concept": {
       "main": [
         [
           {
-            "node": "Veo start",
+            "node": "Split scenes",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Veo start": {
+    "Split scenes": {
       "main": [
         [
           {
-            "node": "Started?",
+            "node": "Pexels",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Started?": {
+    "Pexels": {
       "main": [
         [
           {
-            "node": "Wait",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
-    },
-    "Wait": {
-      "main": [
-        [
-          {
-            "node": "Veo poll",
+            "node": "Pick clip",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Veo poll": {
+    "Pick clip": {
       "main": [
         [
           {
-            "node": "Done?",
+            "node": "Jamendo",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Done?": {
+    "Jamendo": {
       "main": [
         [
           {
-            "node": "Download clip",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Wait",
+            "node": "Build job",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Download clip": {
+    "Build job": {
+      "main": [
+        [
+          {
+            "node": "SSH render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH render": {
+      "main": [
+        [
+          {
+            "node": "Decode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode": {
       "main": [
         [
           {
@@ -810,40 +829,18 @@
       "main": [
         [
           {
-            "node": "Mark published",
+            "node": "Mark Published",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Mark published": {
+    "Mark Published": {
       "main": [
         [
           {
             "node": "TG alert",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "▶ Video (Schedule, Ready)": {
-      "main": [
-        [
-          {
-            "node": "Get Ready",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "▶ Video (webhook)": {
-      "main": [
-        [
-          {
-            "node": "Get Ready",
             "type": "main",
             "index": 0
           }
