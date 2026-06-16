@@ -1,0 +1,259 @@
+{
+  "name": "FG · Phase1 · 01 Topic Scoring",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fg-scoring",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "s1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        300
+      ],
+      "webhookId": "fg-scoring"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "ideas_db",
+              "value": "38186abe-0a40-81b3-9fc1-cbc16c10e354",
+              "type": "string"
+            },
+            {
+              "id": "c2",
+              "name": "min_score",
+              "value": 6,
+              "type": "number"
+            },
+            {
+              "id": "c3",
+              "name": "scorer_system",
+              "value": "Ты — редактор, отбирающий идеи по потенциалу привести пользователя в Telegram-бот FoodGenius AI (меню на неделю + рецепты + список покупок под спорт/вес/состав семьи).\nОцени идею по шкале 1-10:\n- trend_score: свежесть/актуальность\n- usefulness_score: реальная польза зрителю\n- viral_score: сохраняемость/пересылаемость (репосты весят больше всего)\n- product_fit_score: насколько естественно ведёт в бота И отстраивает от конкурентов (планирование, а не трекинг; под тренировки; на всю семью; список покупок сам)\nВерни ТОЛЬКО JSON: {trend_score, usefulness_score, viral_score, product_fit_score, reason}. Числа 1-10, reason — одна короткая фраза. Без markdown.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "s2",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.notion.com/v1/databases/{{ $('Config').item.json.ideas_db }}/query",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filter: { property: 'status', select: { equals: 'Researched' } }, page_size: 10 }) }}",
+        "options": {}
+      },
+      "id": "s3",
+      "name": "Get Researched",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GOH6jHeJP5mmYapj",
+          "name": "Notion FoodGenius (HTTP)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = ($input.first().json.results) || [];\nconst g = (pr,n,t) => { const x=pr[n]||{}; if(t==='title') return (x.title||[]).map(z=>z.plain_text).join(''); if(t==='rt') return (x.rich_text||[]).map(z=>z.plain_text).join(''); return ''; };\nreturn res.map(p => ({ json: { page_id: p.id, topic: g(p.properties,'topic','title'), content_angle: g(p.properties,'content_angle','rt'), summary: g(p.properties,'summary','rt') } }));"
+      },
+      "id": "s4",
+      "name": "To items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ system_instruction: { parts: [{ text: $('Config').item.json.scorer_system }] }, contents: [{ role: 'user', parts: [{ text: JSON.stringify({ topic: $json.topic, content_angle: $json.content_angle, summary: $json.summary }) }] }], generationConfig: { temperature: 0, responseMimeType: 'application/json' } }) }}",
+        "options": {}
+      },
+      "id": "s5",
+      "name": "Scorer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "dh36tHYBei17CBTc",
+          "name": "Gemini API key (paid)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const scored=$input.all();\nconst toItems=$('To items').all();\nconst min=$('Config').first().json.min_score||6;\nconst out=[];\nfor(let i=0;i<scored.length;i++){\n  let s;\n  try{ const raw=scored[i].json.candidates[0].content.parts[0].text; const clean=raw.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim(); s=JSON.parse(clean);}catch(e){ continue; }\n  const t=+s.trend_score||0,u=+s.usefulness_score||0,v=+s.viral_score||0,pf=+s.product_fit_score||0;\n  const total=+(t*0.2+u*0.3+v*0.25+pf*0.25).toFixed(2);\n  const status=total>=min?'Scored':'Rejected';\n  const ti=(toItems[i]||{}).json||{};\n  if(!ti.page_id) continue;\n  out.push({json:{page_id:ti.page_id,topic:ti.topic||'',total,status,props:{trend_score:{number:t},usefulness_score:{number:u},viral_score:{number:v},product_fit_score:{number:pf},total_score:{number:total},status:{select:{name:status}},why_now:{rich_text:[{text:{content:('score: '+(s.reason||'')).slice(0,1900)}}]},updated_at:{date:{start:new Date().toISOString()}}}}});\n}\nreturn out;"
+      },
+      "id": "s6",
+      "name": "Compute score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.page_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: $json.props }) }}",
+        "options": {}
+      },
+      "id": "s7",
+      "name": "Notion update",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        800,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GOH6jHeJP5mmYapj",
+          "name": "Notion FoodGenius (HTTP)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Get Researched",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Researched": {
+      "main": [
+        [
+          {
+            "node": "To items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "To items": {
+      "main": [
+        [
+          {
+            "node": "Scorer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scorer": {
+      "main": [
+        [
+          {
+            "node": "Compute score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute score": {
+      "main": [
+        [
+          {
+            "node": "Notion update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
