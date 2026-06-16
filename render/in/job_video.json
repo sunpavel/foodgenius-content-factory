@@ -1,0 +1,24 @@
+{
+  "scenes": [
+    {
+      "url": "https://videos.pexels.com/video-files/3704441/3704441-hd_720_1366_50fps.mp4",
+      "onscreen_text": "Один список — 7 ужинов на всю семью",
+      "dur": 3.5
+    },
+    {
+      "url": "https://videos.pexels.com/video-files/3832194/3832194-hd_720_1366_50fps.mp4",
+      "onscreen_text": "Сначала план: белки, углеводы, овощи",
+      "dur": 3.5
+    },
+    {
+      "url": "https://videos.pexels.com/video-files/7250804/7250804-hd_1080_1920_25fps.mp4",
+      "onscreen_text": "2 часа готовки — и неделя закрыта",
+      "dur": 3.5
+    }
+  ],
+  "packshot": {
+    "text": "FoodGenius",
+    "cta": "Бесплатный помощник —\nссылка в описании",
+    "dur": 2.5
+  }
+}
