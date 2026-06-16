@@ -1,0 +1,234 @@
+{
+  "name": "FG · Phase1 · 02 Duplicate Check",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fg-dedup",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "d1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        300
+      ],
+      "webhookId": "fg-dedup"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "ideas_db",
+              "value": "38186abe-0a40-81b3-9fc1-cbc16c10e354",
+              "type": "string"
+            },
+            {
+              "id": "c2",
+              "name": "similarity_threshold",
+              "value": 0.8,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d2",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.notion.com/v1/databases/{{ $('Config').item.json.ideas_db }}/query",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ page_size: 100 }) }}",
+        "options": {}
+      },
+      "id": "d3",
+      "name": "Get all ideas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GOH6jHeJP5mmYapj",
+          "name": "Notion FoodGenius (HTTP)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const res=($input.first().json.results)||[];\nconst g=(pr,n,t)=>{const x=pr[n]||{}; if(t==='title')return (x.title||[]).map(z=>z.plain_text).join(''); if(t==='rt')return (x.rich_text||[]).map(z=>z.plain_text).join(''); if(t==='select')return (x.select||{}).name||''; return '';};\nconst ideas=res.map(p=>({page_id:p.id, topic:g(p.properties,'topic','title'), hash:g(p.properties,'topic_hash','rt'), status:g(p.properties,'status','select'), created:((p.properties.created_at||{}).date||{}).start||p.created_time})).sort((a,b)=>(a.created||'').localeCompare(b.created||''));\nconst norm=s=>(s||'').toLowerCase().replace(/[^0-9a-zа-яё ]/gi,' ').split(/\\s+/).filter(w=>w.length>2);\nconst jac=(a,b)=>{const A=new Set(a),B=new Set(b);let i=0;for(const x of A)if(B.has(x))i++;const u=new Set([...a,...b]).size;return u?i/u:0;};\nconst thr=$('Config').first().json.similarity_threshold||0.8;\nconst seen=[]; const dups=[];\nfor(const it of ideas){\n  if(it.status==='Duplicate'||it.status==='Rejected'){continue;}\n  let m=null;\n  for(const c of seen){ if(it.hash&&it.hash===c.hash){m=c;break;} if(jac(norm(it.topic),norm(c.topic))>=thr){m=c;break;} }\n  if(m){ dups.push({page_id:it.page_id, topic:it.topic, matched:m.topic}); } else { seen.push(it); }\n}\nreturn dups.length? dups.map(d=>({json:{page_id:d.page_id, topic:d.topic, matched:d.matched, props:{status:{select:{name:'Duplicate'}}, duplicate_status:{select:{name:'duplicate'}}, updated_at:{date:{start:new Date().toISOString()}}}}})) : [{json:{none:true}}];"
+      },
+      "id": "d4",
+      "name": "Find dups",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "x1",
+              "leftValue": "={{ $json.page_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d5",
+      "name": "Has dups?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.page_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: $json.props }) }}",
+        "options": {}
+      },
+      "id": "d6",
+      "name": "Mark duplicate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        220
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GOH6jHeJP5mmYapj",
+          "name": "Notion FoodGenius (HTTP)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Get all ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get all ideas": {
+      "main": [
+        [
+          {
+            "node": "Find dups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find dups": {
+      "main": [
+        [
+          {
+            "node": "Has dups?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has dups?": {
+      "main": [
+        [
+          {
+            "node": "Mark duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
