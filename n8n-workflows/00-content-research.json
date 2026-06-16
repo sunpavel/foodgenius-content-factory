@@ -1,0 +1,74 @@
+{
+  "name": "FG · Phase1 · 00 Content Research",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "fg-research", "responseMode": "lastNode", "options": {} },
+      "id": "a1", "name": "Webhook", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [-200, 300], "webhookId": "fg-research"
+    },
+    {
+      "parameters": {
+        "assignments": { "assignments": [
+          { "id": "f1", "name": "max_items", "value": 5, "type": "number" },
+          { "id": "f2", "name": "niche", "value": "питание, ЗОЖ, фитнес, похудение, рецепты, меню, список покупок (продукт: Telegram-бот FoodGenius AI)", "type": "string" },
+          { "id": "f3", "name": "ideas_db", "value": "38186abe-0a40-81b3-9fc1-cbc16c10e354", "type": "string" },
+          { "id": "f4", "name": "perplexity_query", "value": "Какие сейчас (последние 2 недели) тренды, инфоповоды, боли и обсуждения в РФ вокруг питания, ЗОЖ, фитнеса, похудения, домашней готовки, меню на неделю и списков покупок? Дай 8-12 конкретных пунктов: суть + где есть цифры/даты. Кратко, по-русски.", "type": "string" },
+          { "id": "f5", "name": "research_system", "value": "Ты — ресёрч-редактор food-медиа для FoodGenius AI (бот: меню на неделю с рецептами и списком покупок под спорт/вес/состав семьи; аудитория РФ, спорт или следят за весом, семьи).\nЗадача: из переданного ресёрча собери 5-10 идей контента. НЕ пиши посты — только идеи.\nДля каждой идеи верни поля: topic; content_angle (боль|польза|тренд|демо-продукта); audience_segment (спорт|похудение|семья|дети|занятые); food_category (рецепт|меню|бюджет|ПП|meal-prep|сезонное|ошибки/мифы|демо-бота); platform_target (video|text|both); summary (1-2 предложения); source_url; source_name; source_date; why_now.\nОтсекай дубли по смыслу, скучные общие темы, темы без связи с едой/продуктом.\nВерни ТОЛЬКО JSON-массив объектов, без пояснений и без markdown.", "type": "string" }
+        ] },
+        "options": {}
+      },
+      "id": "a2", "name": "Config", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST", "url": "https://api.perplexity.ai/chat/completions",
+        "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth",
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'sonar', messages: [{ role: 'system', content: 'Ты ресёрчер трендов в нише питания/ЗОЖ/фитнеса для РФ. Кратко, конкретно, с цифрами и датами где есть.' }, { role: 'user', content: $('Config').item.json.perplexity_query }], max_tokens: 900, temperature: 0.4 }) }}",
+        "options": {}
+      },
+      "id": "a3", "name": "Perplexity", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [200, 300],
+      "retryOnFail": true, "maxTries": 3, "waitBetweenTries": 2000,
+      "credentials": { "httpHeaderAuth": { "id": "ds1CYMradGEohKUt", "name": "Perplexity API" } }
+    },
+    {
+      "parameters": {
+        "method": "POST", "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth",
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ system_instruction: { parts: [{ text: $('Config').item.json.research_system }] }, contents: [{ role: 'user', parts: [{ text: 'Свежий ресёрч (Perplexity):\\n' + $('Perplexity').item.json.choices[0].message.content + '\\n\\nНиша: ' + $('Config').item.json.niche }] }], generationConfig: { temperature: 0.7, responseMimeType: 'application/json' } }) }}",
+        "options": {}
+      },
+      "id": "a4", "name": "Research agent", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [400, 300],
+      "retryOnFail": true, "maxTries": 4, "waitBetweenTries": 3000,
+      "credentials": { "httpHeaderAuth": { "id": "dh36tHYBei17CBTc", "name": "Gemini API key (paid)" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.candidates[0].content.parts[0].text;\nconst clean = raw.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();\nlet ideas = JSON.parse(clean);\nif (!Array.isArray(ideas)) ideas = ideas.ideas || [ideas];\nconst max = $('Config').first().json.max_items || 5;\nideas = ideas.slice(0, max);\nconst hash = s => { s=(s||'').toLowerCase().replace(/[^0-9a-zа-яё ]/gi,'').replace(/\\s+/g,' ').trim(); let h=5381; for(let i=0;i<s.length;i++){ h=(((h<<5)+h)+s.charCodeAt(i))&0xffffffff; } return 'h'+(h>>>0).toString(16); };\nconst now = new Date().toISOString();\nconst rt = v => ({ rich_text:[{ text:{ content:String(v==null?'':v).slice(0,1900) } }] });\nconst sel = v => (v && String(v).trim()) ? ({ select:{ name:String(v).slice(0,90) } }) : null;\nconst out = [];\nfor (const it of ideas) {\n  const props = {\n    'topic': { title:[{ text:{ content:String(it.topic||'без темы').slice(0,1900) } }] },\n    'status': { select:{ name:'Researched' } },\n    'content_angle': rt(it.content_angle),\n    'summary': rt(it.summary),\n    'why_now': rt(it.why_now),\n    'source_name': rt(it.source_name),\n    'topic_hash': rt(hash(it.topic)),\n    'duplicate_status': { select:{ name:'unchecked' } },\n    'created_at': { date:{ start: now } },\n    'updated_at': { date:{ start: now } }\n  };\n  const seg = sel(it.audience_segment); if (seg) props['audience_segment']=seg;\n  const fc = sel(it.food_category); if (fc) props['food_category']=fc;\n  const pt = sel(it.platform_target); if (pt) props['platform_target']=pt;\n  if (it.source_url && /^https?:\\/\\//.test(it.source_url)) props['source_url']={ url: String(it.source_url).slice(0,1900) };\n  out.push({ json: { topic: it.topic, notion_props: props } });\n}\nreturn out;"
+      },
+      "id": "a5", "name": "Build ideas", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST", "url": "https://api.notion.com/v1/pages",
+        "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [ { "name": "Notion-Version", "value": "2022-06-28" } ] },
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ parent: { database_id: $('Config').first().json.ideas_db }, properties: $json.notion_props }) }}",
+        "options": {}
+      },
+      "id": "a6", "name": "Notion create", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [800, 300],
+      "retryOnFail": true, "maxTries": 3, "waitBetweenTries": 1500,
+      "credentials": { "httpHeaderAuth": { "id": "GOH6jHeJP5mmYapj", "name": "Notion FoodGenius (HTTP)" } }
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Config", "type": "main", "index": 0 }]] },
+    "Config": { "main": [[{ "node": "Perplexity", "type": "main", "index": 0 }]] },
+    "Perplexity": { "main": [[{ "node": "Research agent", "type": "main", "index": 0 }]] },
+    "Research agent": { "main": [[{ "node": "Build ideas", "type": "main", "index": 0 }]] },
+    "Build ideas": { "main": [[{ "node": "Notion create", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
