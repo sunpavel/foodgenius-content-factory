@@ -303,7 +303,7 @@
       },
       "parameters": {
         "method": "POST",
-        "url": "=https://api.notion.com/v1/databases/{{ $('Config').item.json.posts_db }}/query",
+        "url": "https://api.notion.com/v1/databases/38186abe-0a40-8183-88eb-ff0c97d97443/query",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -567,7 +567,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ properties: { status:{select:{name:'Published'}}, external_post_id:{rich_text:[{text:{content: String($json.id||'') }}]}, published_at:{date:{start:new Date().toISOString()}} } }) }}",
+        "jsonBody": "={{ JSON.stringify({ properties: { status: { select: { name: 'Published' } }, external_post_id: { rich_text: [ { text: { content: String($('YouTube upload').item.json.uploadId || '') } } ] }, published_at: { date: { start: $now.toISO() } } } }) }}",
         "options": {}
       }
     },
@@ -588,8 +588,25 @@
       },
       "parameters": {
         "chatId": "109790719",
-        "text": "=✅ YouTube Shorts опубликован: {{ $('To item').item.json.title }}\\nhttps://youtu.be/{{ $('YouTube upload').item.json.id }}",
+        "text": "=✅ YouTube Shorts опубликован: {{ $('To item').item.json.title }}\nhttps://youtu.be/{{ $('YouTube upload').item.json.uploadId }}",
         "additionalFields": {}
+      }
+    },
+    {
+      "id": "v0",
+      "name": "▶ Video (webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        860
+      ],
+      "webhookId": "fg-video-run",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fg-video-run",
+        "responseMode": "onReceived",
+        "options": {}
       }
     }
   ],
@@ -812,6 +829,17 @@
       ]
     },
     "▶ Video (Schedule, Ready)": {
+      "main": [
+        [
+          {
+            "node": "Get Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "▶ Video (webhook)": {
       "main": [
         [
           {
