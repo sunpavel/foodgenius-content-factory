@@ -317,7 +317,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filter:{ and:[ {property:'status',select:{equals:'Ready'}}, {property:'external_post_id',rich_text:{is_empty:true}} ] }, page_size:1 }) }}",
+        "jsonBody": "={{ JSON.stringify({ filter: { property: 'status', select: { equals: 'Ready' } }, page_size: 1 }) }}",
         "options": {}
       }
     },
@@ -331,7 +331,7 @@
         700
       ],
       "parameters": {
-        "jsCode": "const res=($input.first().json.results)||[];\nif(!res.length){return [];}\nconst p=res[0]; const pr=p.properties;\nconst g=(n,t)=>{const x=pr[n]||{}; if(t=='title')return (x.title||[]).map(z=>z.plain_text).join(''); if(t=='rt')return (x.rich_text||[]).map(z=>z.plain_text).join(''); return '';};\nlet c={}; try{ c=JSON.parse(g('final_text','rt')); }catch(e){}\nconst scenes=(c.scenes||[]).map(s=>({footage_query:s.footage_query||'healthy food cooking', onscreen_text:s.onscreen_text||'', dur:s.dur||3.5}));\nreturn [{json:{page_id:p.id, title:g('title','title').slice(0,95), start_code:g('start_code','rt'), music_mood:(c.music_mood||'upbeat positive'), caption:(c.caption||g('title','title')), cta:(c.cta||''), scenes}}];"
+        "jsCode": "const res=($input.first().json.results)||[];\nif(!res.length){return [];}\nconst p=res[0]; const pr=p.properties;\nconst g=(n,t)=>{const x=pr[n]||{}; if(t=='title')return (x.title||[]).map(z=>z.plain_text).join(''); if(t=='rt')return (x.rich_text||[]).map(z=>z.plain_text).join(''); return '';};\nif(g('external_post_id','rt')){ return []; }\nlet c={}; try{ c=JSON.parse(g('final_text','rt')); }catch(e){}\nconst scenes=(c.scenes||[]).map(s=>({footage_query:s.footage_query||'healthy food cooking', onscreen_text:s.onscreen_text||'', dur:s.dur||3.5}));\nreturn [{json:{page_id:p.id, title:g('title','title').slice(0,95), start_code:g('start_code','rt'), music_mood:(c.music_mood||'upbeat positive'), caption:(c.caption||g('title','title')), cta:(c.cta||''), scenes}}];"
       }
     },
     {
@@ -589,7 +589,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ properties:{ status:{select:{name:'Published'}}, external_post_id:{rich_text:[{text:{content:String($('YouTube upload').item.json.id||'')}}]}, published_at:{date:{start:new Date().toISOString()}} } }) }}",
+        "jsonBody": "={{ JSON.stringify({ properties: { status: { select: { name: 'Published' } }, external_post_id: { rich_text: [ { text: { content: String($('YouTube upload').item.json.uploadId || '') } } ] }, published_at: { date: { start: new Date().toISOString() } } } }) }}",
         "options": {}
       }
     },
@@ -610,8 +610,25 @@
       },
       "parameters": {
         "chatId": "109790719",
-        "text": "=✅ YouTube Shorts: {{ $('Build job').item.json.title }}\\nhttps://youtu.be/{{ $('YouTube upload').item.json.id }}",
+        "text": "=✅ YouTube Shorts: {{ $('Build job').item.json.title }}\\nhttps://youtu.be/{{ $('YouTube upload').item.json.uploadId }}",
         "additionalFields": {}
+      }
+    },
+    {
+      "id": "vrun",
+      "name": "Video run",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        950
+      ],
+      "webhookId": "fg-video-run",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fg-video-run",
+        "responseMode": "onReceived",
+        "options": {}
       }
     }
   ],
@@ -841,6 +858,17 @@
         [
           {
             "node": "TG alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video run": {
+      "main": [
+        [
+          {
+            "node": "Get Ready",
             "type": "main",
             "index": 0
           }
