@@ -630,6 +630,28 @@
         "responseMode": "onReceived",
         "options": {}
       }
+    },
+    {
+      "id": "fsched",
+      "name": "▶ Research (Schedule, daily)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -600,
+        360
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      }
     }
   ],
   "connections": {
@@ -869,6 +891,17 @@
         [
           {
             "node": "Get Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "▶ Research (Schedule, daily)": {
+      "main": [
+        [
+          {
+            "node": "Config",
             "type": "main",
             "index": 0
           }
