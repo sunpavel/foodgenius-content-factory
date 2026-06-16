@@ -1,0 +1,708 @@
+{
+  "updatedAt": "2026-06-15T15:26:56.009Z",
+  "createdAt": "2026-06-15T12:42:05.037Z",
+  "id": "LISppXfjrbJLkbuv",
+  "name": "FoodGenius · 1 · Идея + сценарий (Gemini)",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "foodgenius-gen",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "w1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        300
+      ],
+      "webhookId": "foodgenius-gen"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1",
+              "name": "niche",
+              "value": "питание, здоровое питание, рецепты, похудение, ЗОЖ, фитнес",
+              "type": "string"
+            },
+            {
+              "id": "b5",
+              "name": "yt_query",
+              "value": "похудение рецепты пп фитнес питание",
+              "type": "string"
+            },
+            {
+              "id": "b2",
+              "name": "task",
+              "value": "Создай ОДИН продуманный креативный рекламный ролик под FoodGenius на основе залетевшего формата из списка. Сделай по-настоящему цепляюще, не банально.",
+              "type": "string"
+            },
+            {
+              "id": "b4",
+              "name": "research_task",
+              "value": "Через Google Поиск найди свежие тренды и залетающие форматы коротких вертикальных видео в нише питания, фитнеса, похудения. Дай 4-6 актуальных приёмов/хуков. Для каждого: почему цепляет, реальный факт или цифра. Кратко.",
+              "type": "string"
+            },
+            {
+              "id": "b3",
+              "name": "script_system",
+              "value": "Ты креативный директор перформанс-рекламы для коротких вертикальных видео (Reels/Shorts/TikTok). Продукт: FoodGenius AI — Telegram-бот и Mini App, который составляет рецепты и план питания под активность, цель и бюджет пользователя. Задача ролика: остановить скролл и завирусить, привести подписчиков и пользователей бота.\n\nТебе дают: (1) список реально залетевших Shorts ниши с просмотрами — это база форматов; (2) свежие факты из поиска. Возьми ОДИН залетевший приём/формат и пересобери его в креативный рекламный ролик под FoodGenius с неожиданным поворотом. Не копируй буквально — адаптируй структуру.\n\nСТРУКТУРА (обязательно):\n- ХУК (0-2 сек): паттерн-разрыв, цепляет с первого кадра — неожиданное действие, эмоция или провокационный вопрос.\n- ПРОБЛЕМА: близкая боль аудитории (не знаешь что есть; доставка дорогая и надоела; тренируешься, а результата нет из-за питания).\n- ПОВОРОТ/РЕШЕНИЕ: FoodGenius решает это.\n- ПЕКШОТ (финал): продукт (интерфейс Mini App или логотип) + текст-CTA на экране.\n\nДелай ЖИВОЙ ролик: люди, эмоция, движение, конфликт. Примеры-референсы нужного уровня:\n- Бегун в красивой форме бежит, выдыхается и падает → пекшот с текстом «потому что он питался неправильно» → FoodGenius.\n- «Надоело думать что есть? Доставка дорогая?» → FoodGenius AI: рецепты под твою активность и бюджет.\n- Молодая спортивная блогерша говорит на камеру (UGC), как с FoodGenius экономит и питается правильно.\nЗАПРЕЩЕНО: скучный b-roll еды (тарелки, накладывание каши). Никаких абстрактных монтажей продуктов.\n\nВыбери ОДИН архетип под тренд: cinematic_story | direct_response | ugc_talking_head.\n\nVeo-промпты сцен пиши на английском, ОЧЕНЬ конкретно: кто в кадре (возраст, внешность, одежда), действие, эмоция, окружение, движение камеры, свет, стиль; вертикаль 9:16, кинематографично, динамично. БЕЗ текста в кадре — текст наложим в монтаже.\n\nРусский текст (хук, озвучка, надписи, CTA): активный залог, без канцелярита и клише, разговорно, цепляюще, конкретно.\n\nВерни СТРОГО JSON без markdown:\n{'concept_name':'название идеи', 'archetype':'cinematic_story|direct_response|ugc_talking_head', 'trend_basis':'какой залетевший формат взят за основу', 'hook_text':'текст-хук на экран 0-2с', 'music_mood':'настроение музыки, напр. energetic upbeat / dramatic / trendy hip-hop', 'voiceover':'полный текст озвучки одним куском', 'scenes':[{'duration_sec':число, 'veo_prompt':'rich cinematic English prompt, 9:16, no on-screen text', 'onscreen_text':'надпись на экране (рус)', 'voiceover_part':'часть озвучки для сцены'}], 'packshot':{'veo_prompt':'final shot: FoodGenius Mini App UI on a phone + logo, vertical 9:16, clean modern', 'text':'текст на пекшоте', 'cta':'призыв к действию'}, 'caption':'описание под площадку', 'hashtags':['#тег']}\n3-5 сцен, общий хронометраж 15-30 сек. Будь по-настоящему креативным.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "w2",
+      "name": "Brief",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/youtube/v3/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet"
+            },
+            {
+              "name": "q",
+              "value": "={{ $('Brief').item.json.yt_query }}"
+            },
+            {
+              "name": "type",
+              "value": "video"
+            },
+            {
+              "name": "videoDuration",
+              "value": "short"
+            },
+            {
+              "name": "order",
+              "value": "viewCount"
+            },
+            {
+              "name": "regionCode",
+              "value": "RU"
+            },
+            {
+              "name": "relevanceLanguage",
+              "value": "ru"
+            },
+            {
+              "name": "maxResults",
+              "value": "10"
+            },
+            {
+              "name": "publishedAfter",
+              "value": "={{ $now.minus({ days: 45 }).toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "w3",
+      "name": "YT search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "3zDDHequPBP5JRDI",
+          "name": "YouTube API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/youtube/v3/videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet,statistics"
+            },
+            {
+              "name": "id",
+              "value": "={{ $('YT search').item.json.items.map(i => i.id.videoId).filter(Boolean).join(',') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "w4",
+      "name": "YT stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "3zDDHequPBP5JRDI",
+          "name": "YouTube API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.first().json.items || [];\nconst rows = items.map(v => ({ title: v.snippet.title, views: parseInt((v.statistics && v.statistics.viewCount) || '0', 10) })).sort((a, b) => b.views - a.views);\nconst text = rows.slice(0, 10).map((r, i) => `${i + 1}. ${r.title} — ${r.views.toLocaleString('ru-RU')} просмотров`).join('\\n');\nreturn [{ json: { yt_text: text, yt_list: rows } }];"
+      },
+      "id": "w5",
+      "name": "YT top",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Сегодня ' + $now.toFormat('dd.MM.yyyy') + '. ' + $('Brief').item.json.research_task + ' Ниша: ' + $('Brief').item.json.niche }] }], tools: [{ google_search: {} }] }) }}",
+        "options": {}
+      },
+      "id": "w6",
+      "name": "Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        800,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "dh36tHYBei17CBTc",
+          "name": "Gemini API key (paid)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ system_instruction: { parts: [{ text: $('Brief').item.json.script_system }] }, contents: [{ role: 'user', parts: [{ text: 'Реально залетевшие Shorts ниши (по просмотрам, изучи хуки и форматы):\\n' + $('YT top').item.json.yt_text + '\\n\\nСвежие тренды и факты из Google Поиска:\\n' + $('Research').item.json.candidates[0].content.parts.map(p => p.text).filter(Boolean).join('\\n') + '\\n\\n' + $('Brief').item.json.task }] }], generationConfig: { temperature: 1.1, responseMimeType: 'application/json' } }) }}",
+        "options": {}
+      },
+      "id": "w7",
+      "name": "Gemini script",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "dh36tHYBei17CBTc",
+          "name": "Gemini API key (paid)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.candidates[0].content.parts[0].text;\nconst clean = raw.trim().replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();\nconst script = JSON.parse(clean);\nlet sources = [];\ntry {\n  const gm = $('Research').first().json.candidates[0].groundingMetadata;\n  const chunks = (gm && gm.groundingChunks) || [];\n  sources = chunks.map(c => c.web && c.web.uri).filter(Boolean);\n} catch (e) {}\nscript.sources = sources;\nscript.youtube_refs = $('YT top').first().json.yt_list.slice(0, 5);\nreturn [{ json: script }];"
+      },
+      "id": "w8",
+      "name": "Parse script",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brief": {
+      "main": [
+        [
+          {
+            "node": "YT search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT search": {
+      "main": [
+        [
+          {
+            "node": "YT stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT stats": {
+      "main": [
+        [
+          {
+            "node": "YT top",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT top": {
+      "main": [
+        [
+          {
+            "node": "Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research": {
+      "main": [
+        [
+          {
+            "node": "Gemini script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini script": {
+      "main": [
+        [
+          {
+            "node": "Parse script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "50376e61-3426-4f75-863e-eea7eb467bba",
+  "activeVersionId": "50376e61-3426-4f75-863e-eea7eb467bba",
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-06-15T12:42:05.044Z",
+      "createdAt": "2026-06-15T12:42:05.044Z",
+      "role": "workflow:owner",
+      "workflowId": "LISppXfjrbJLkbuv",
+      "projectId": "j2PMMyc6BnhwWF6d"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-06-15T15:26:56.011Z",
+    "createdAt": "2026-06-15T15:26:56.011Z",
+    "versionId": "50376e61-3426-4f75-863e-eea7eb467bba",
+    "workflowId": "LISppXfjrbJLkbuv",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "foodgenius-gen",
+          "responseMode": "lastNode",
+          "options": {}
+        },
+        "id": "w1",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          -200,
+          300
+        ],
+        "webhookId": "foodgenius-gen"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "b1",
+                "name": "niche",
+                "value": "питание, здоровое питание, рецепты, похудение, ЗОЖ, фитнес",
+                "type": "string"
+              },
+              {
+                "id": "b5",
+                "name": "yt_query",
+                "value": "похудение рецепты пп фитнес питание",
+                "type": "string"
+              },
+              {
+                "id": "b2",
+                "name": "task",
+                "value": "Создай ОДИН продуманный креативный рекламный ролик под FoodGenius на основе залетевшего формата из списка. Сделай по-настоящему цепляюще, не банально.",
+                "type": "string"
+              },
+              {
+                "id": "b4",
+                "name": "research_task",
+                "value": "Через Google Поиск найди свежие тренды и залетающие форматы коротких вертикальных видео в нише питания, фитнеса, похудения. Дай 4-6 актуальных приёмов/хуков. Для каждого: почему цепляет, реальный факт или цифра. Кратко.",
+                "type": "string"
+              },
+              {
+                "id": "b3",
+                "name": "script_system",
+                "value": "Ты креативный директор перформанс-рекламы для коротких вертикальных видео (Reels/Shorts/TikTok). Продукт: FoodGenius AI — Telegram-бот и Mini App, который составляет рецепты и план питания под активность, цель и бюджет пользователя. Задача ролика: остановить скролл и завирусить, привести подписчиков и пользователей бота.\n\nТебе дают: (1) список реально залетевших Shorts ниши с просмотрами — это база форматов; (2) свежие факты из поиска. Возьми ОДИН залетевший приём/формат и пересобери его в креативный рекламный ролик под FoodGenius с неожиданным поворотом. Не копируй буквально — адаптируй структуру.\n\nСТРУКТУРА (обязательно):\n- ХУК (0-2 сек): паттерн-разрыв, цепляет с первого кадра — неожиданное действие, эмоция или провокационный вопрос.\n- ПРОБЛЕМА: близкая боль аудитории (не знаешь что есть; доставка дорогая и надоела; тренируешься, а результата нет из-за питания).\n- ПОВОРОТ/РЕШЕНИЕ: FoodGenius решает это.\n- ПЕКШОТ (финал): продукт (интерфейс Mini App или логотип) + текст-CTA на экране.\n\nДелай ЖИВОЙ ролик: люди, эмоция, движение, конфликт. Примеры-референсы нужного уровня:\n- Бегун в красивой форме бежит, выдыхается и падает → пекшот с текстом «потому что он питался неправильно» → FoodGenius.\n- «Надоело думать что есть? Доставка дорогая?» → FoodGenius AI: рецепты под твою активность и бюджет.\n- Молодая спортивная блогерша говорит на камеру (UGC), как с FoodGenius экономит и питается правильно.\nЗАПРЕЩЕНО: скучный b-roll еды (тарелки, накладывание каши). Никаких абстрактных монтажей продуктов.\n\nВыбери ОДИН архетип под тренд: cinematic_story | direct_response | ugc_talking_head.\n\nVeo-промпты сцен пиши на английском, ОЧЕНЬ конкретно: кто в кадре (возраст, внешность, одежда), действие, эмоция, окружение, движение камеры, свет, стиль; вертикаль 9:16, кинематографично, динамично. БЕЗ текста в кадре — текст наложим в монтаже.\n\nРусский текст (хук, озвучка, надписи, CTA): активный залог, без канцелярита и клише, разговорно, цепляюще, конкретно.\n\nВерни СТРОГО JSON без markdown:\n{'concept_name':'название идеи', 'archetype':'cinematic_story|direct_response|ugc_talking_head', 'trend_basis':'какой залетевший формат взят за основу', 'hook_text':'текст-хук на экран 0-2с', 'music_mood':'настроение музыки, напр. energetic upbeat / dramatic / trendy hip-hop', 'voiceover':'полный текст озвучки одним куском', 'scenes':[{'duration_sec':число, 'veo_prompt':'rich cinematic English prompt, 9:16, no on-screen text', 'onscreen_text':'надпись на экране (рус)', 'voiceover_part':'часть озвучки для сцены'}], 'packshot':{'veo_prompt':'final shot: FoodGenius Mini App UI on a phone + logo, vertical 9:16, clean modern', 'text':'текст на пекшоте', 'cta':'призыв к действию'}, 'caption':'описание под площадку', 'hashtags':['#тег']}\n3-5 сцен, общий хронометраж 15-30 сек. Будь по-настоящему креативным.",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "w2",
+        "name": "Brief",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          0,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "method": "GET",
+          "url": "https://www.googleapis.com/youtube/v3/search",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpQueryAuth",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "part",
+                "value": "snippet"
+              },
+              {
+                "name": "q",
+                "value": "={{ $('Brief').item.json.yt_query }}"
+              },
+              {
+                "name": "type",
+                "value": "video"
+              },
+              {
+                "name": "videoDuration",
+                "value": "short"
+              },
+              {
+                "name": "order",
+                "value": "viewCount"
+              },
+              {
+                "name": "regionCode",
+                "value": "RU"
+              },
+              {
+                "name": "relevanceLanguage",
+                "value": "ru"
+              },
+              {
+                "name": "maxResults",
+                "value": "10"
+              },
+              {
+                "name": "publishedAfter",
+                "value": "={{ $now.minus({ days: 45 }).toISO() }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "w3",
+        "name": "YT search",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          200,
+          300
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "httpQueryAuth": {
+            "id": "3zDDHequPBP5JRDI",
+            "name": "YouTube API key"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "GET",
+          "url": "https://www.googleapis.com/youtube/v3/videos",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpQueryAuth",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "part",
+                "value": "snippet,statistics"
+              },
+              {
+                "name": "id",
+                "value": "={{ $('YT search').item.json.items.map(i => i.id.videoId).filter(Boolean).join(',') }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "w4",
+        "name": "YT stats",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          400,
+          300
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "httpQueryAuth": {
+            "id": "3zDDHequPBP5JRDI",
+            "name": "YouTube API key"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const items = $input.first().json.items || [];\nconst rows = items.map(v => ({ title: v.snippet.title, views: parseInt((v.statistics && v.statistics.viewCount) || '0', 10) })).sort((a, b) => b.views - a.views);\nconst text = rows.slice(0, 10).map((r, i) => `${i + 1}. ${r.title} — ${r.views.toLocaleString('ru-RU')} просмотров`).join('\\n');\nreturn [{ json: { yt_text: text, yt_list: rows } }];"
+        },
+        "id": "w5",
+        "name": "YT top",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          600,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Сегодня ' + $now.toFormat('dd.MM.yyyy') + '. ' + $('Brief').item.json.research_task + ' Ниша: ' + $('Brief').item.json.niche }] }], tools: [{ google_search: {} }] }) }}",
+          "options": {}
+        },
+        "id": "w6",
+        "name": "Research",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          800,
+          300
+        ],
+        "retryOnFail": true,
+        "maxTries": 4,
+        "waitBetweenTries": 3000,
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "dh36tHYBei17CBTc",
+            "name": "Gemini API key (paid)"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ system_instruction: { parts: [{ text: $('Brief').item.json.script_system }] }, contents: [{ role: 'user', parts: [{ text: 'Реально залетевшие Shorts ниши (по просмотрам, изучи хуки и форматы):\\n' + $('YT top').item.json.yt_text + '\\n\\nСвежие тренды и факты из Google Поиска:\\n' + $('Research').item.json.candidates[0].content.parts.map(p => p.text).filter(Boolean).join('\\n') + '\\n\\n' + $('Brief').item.json.task }] }], generationConfig: { temperature: 1.1, responseMimeType: 'application/json' } }) }}",
+          "options": {}
+        },
+        "id": "w7",
+        "name": "Gemini script",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1000,
+          300
+        ],
+        "retryOnFail": true,
+        "maxTries": 4,
+        "waitBetweenTries": 3000,
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "dh36tHYBei17CBTc",
+            "name": "Gemini API key (paid)"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const raw = $input.first().json.candidates[0].content.parts[0].text;\nconst clean = raw.trim().replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();\nconst script = JSON.parse(clean);\nlet sources = [];\ntry {\n  const gm = $('Research').first().json.candidates[0].groundingMetadata;\n  const chunks = (gm && gm.groundingChunks) || [];\n  sources = chunks.map(c => c.web && c.web.uri).filter(Boolean);\n} catch (e) {}\nscript.sources = sources;\nscript.youtube_refs = $('YT top').first().json.yt_list.slice(0, 5);\nreturn [{ json: script }];"
+        },
+        "id": "w8",
+        "name": "Parse script",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1200,
+          300
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Brief",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Brief": {
+        "main": [
+          [
+            {
+              "node": "YT search",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "YT search": {
+        "main": [
+          [
+            {
+              "node": "YT stats",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "YT stats": {
+        "main": [
+          [
+            {
+              "node": "YT top",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "YT top": {
+        "main": [
+          [
+            {
+              "node": "Research",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Research": {
+        "main": [
+          [
+            {
+              "node": "Gemini script",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gemini script": {
+        "main": [
+          [
+            {
+              "node": "Parse script",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Pavel Skvorcov",
+    "name": null,
+    "description": null,
+    "autosaved": false
+  },
+  "tags": []
+}

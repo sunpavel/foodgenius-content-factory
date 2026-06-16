@@ -1,0 +1,286 @@
+{
+  "updatedAt": "2026-06-15T17:45:36.872Z",
+  "createdAt": "2026-06-15T17:45:36.872Z",
+  "id": "I0kfiOB2MeLl5wsx",
+  "name": "FoodGenius · 3 · Render (test)",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "render-test",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "r1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "render-test"
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "cd /opt/foodgenius/render && mkdir -p out && ffmpeg -y -hide_banner -loglevel error -f lavfi -i color=c=0x12343b:s=1080x1920:d=5 -f lavfi -i anullsrc=r=44100:cl=stereo -shortest -c:v libx264 -pix_fmt yuv420p -c:a aac in/clip1.mp4 && bash render.sh in/clip1.mp4 out/final1.mp4 && echo RENDER_OK && stat -c%s out/final1.mp4",
+        "cwd": "/opt/foodgenius/render"
+      },
+      "id": "r2",
+      "name": "SSH render",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "sshPassword": {
+          "id": "D1sEMbXOFTU2jtFy",
+          "name": "Timeweb host SSH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "download",
+        "path": "/opt/foodgenius/render/out/final1.mp4",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "id": "r3",
+      "name": "SSH download",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ],
+      "credentials": {
+        "sshPassword": {
+          "id": "D1sEMbXOFTU2jtFy",
+          "name": "Timeweb host SSH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "109790719",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "additionalFields": {
+          "caption": "FoodGenius · тест сборки: текст выжжен ffmpeg (n8n -> сервер -> Telegram)"
+        }
+      },
+      "id": "r4",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        0
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "GQscmiSjVqXdMBEP",
+          "name": "FoodGenius review bot"
+        }
+      },
+      "webhookId": "e08289f1-d0f9-4e3c-be60-b31e63f5276a"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "SSH render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH render": {
+      "main": [
+        [
+          {
+            "node": "SSH download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH download": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "4904383c-a9a5-4d5c-a26e-77080f2dd301",
+  "activeVersionId": "4904383c-a9a5-4d5c-a26e-77080f2dd301",
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-06-15T17:45:36.874Z",
+      "createdAt": "2026-06-15T17:45:36.874Z",
+      "role": "workflow:owner",
+      "workflowId": "I0kfiOB2MeLl5wsx",
+      "projectId": "j2PMMyc6BnhwWF6d"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-06-15T17:45:36.875Z",
+    "createdAt": "2026-06-15T17:45:36.875Z",
+    "versionId": "4904383c-a9a5-4d5c-a26e-77080f2dd301",
+    "workflowId": "I0kfiOB2MeLl5wsx",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "render-test",
+          "responseMode": "onReceived",
+          "options": {}
+        },
+        "id": "r1",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          0,
+          0
+        ],
+        "webhookId": "render-test"
+      },
+      {
+        "parameters": {
+          "resource": "command",
+          "command": "cd /opt/foodgenius/render && mkdir -p out && ffmpeg -y -hide_banner -loglevel error -f lavfi -i color=c=0x12343b:s=1080x1920:d=5 -f lavfi -i anullsrc=r=44100:cl=stereo -shortest -c:v libx264 -pix_fmt yuv420p -c:a aac in/clip1.mp4 && bash render.sh in/clip1.mp4 out/final1.mp4 && echo RENDER_OK && stat -c%s out/final1.mp4",
+          "cwd": "/opt/foodgenius/render"
+        },
+        "id": "r2",
+        "name": "SSH render",
+        "type": "n8n-nodes-base.ssh",
+        "typeVersion": 1,
+        "position": [
+          220,
+          0
+        ],
+        "credentials": {
+          "sshPassword": {
+            "id": "D1sEMbXOFTU2jtFy",
+            "name": "Timeweb host SSH"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "resource": "file",
+          "operation": "download",
+          "path": "/opt/foodgenius/render/out/final1.mp4",
+          "binaryPropertyName": "data",
+          "options": {}
+        },
+        "id": "r3",
+        "name": "SSH download",
+        "type": "n8n-nodes-base.ssh",
+        "typeVersion": 1,
+        "position": [
+          440,
+          0
+        ],
+        "credentials": {
+          "sshPassword": {
+            "id": "D1sEMbXOFTU2jtFy",
+            "name": "Timeweb host SSH"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "sendVideo",
+          "chatId": "109790719",
+          "binaryData": true,
+          "binaryPropertyName": "data",
+          "additionalFields": {
+            "caption": "FoodGenius · тест сборки: текст выжжен ffmpeg (n8n -> сервер -> Telegram)"
+          }
+        },
+        "id": "r4",
+        "name": "Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          660,
+          0
+        ],
+        "credentials": {
+          "telegramApi": {
+            "id": "GQscmiSjVqXdMBEP",
+            "name": "FoodGenius review bot"
+          }
+        },
+        "webhookId": "e08289f1-d0f9-4e3c-be60-b31e63f5276a"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "SSH render",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "SSH render": {
+        "main": [
+          [
+            {
+              "node": "SSH download",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "SSH download": {
+        "main": [
+          [
+            {
+              "node": "Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Pavel Skvorcov",
+    "name": null,
+    "description": null,
+    "autosaved": false
+  },
+  "tags": []
+}
