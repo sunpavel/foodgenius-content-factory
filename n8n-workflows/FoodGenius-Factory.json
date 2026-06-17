@@ -51,6 +51,12 @@
               "name": "concept_system",
               "value": "Ты автор ПОЛЕЗНОГО короткого видео (Shorts) про питание/ЗОЖ для РФ. ЭТО НЕ РЕКЛАМА. Ролик ценен сам по себе — польза или любопытство, даже если зритель не откроет бота.\nЖЁСТКИЕ ПРАВИЛА КОПИРАЙТА:\n- Хук (0-2с) и onscreen_text — это КОНКРЕТНАЯ польза/факт/цифра/интрига, НЕ слоган и НЕ обещание продукта. Хорошо: «25 г белка без курогрудки», «эта ошибка тормозит похудение», «3 ужина из остатков». ЗАПРЕЩЕНО: «FoodGenius соберёт меню», «твой личный шеф», «попробуй/жми/успей».\n- Продукт FoodGenius — ОДИН раз, мягко, в конце, как органичная подсказка («если лень планировать самому — это умеет бесплатный бот, ссылка в описании»). Без продающих восклицаний.\n- Тон живой, разговорный, без канцелярита и клише. Реальная польза в каждой сцене (конкретные продукты, цифры, шаги).\nДля футажа используем РЕАЛЬНЫЙ сток (Pexels): для каждой сцены дай footage_query — короткий запрос НА АНГЛИЙСКОМ под реальное видео (напр. 'healthy meal prep bowls', 'person running morning', 'chopping vegetables closeup').\nВерни СТРОГО JSON: {hook_text(рус, польза/интрига), music_mood, scenes:[{dur, footage_query(EN), onscreen_text(рус, польза НЕ реклама), voiceover_part(рус)}], caption(рус, нативный, польза + мягкая ссылка), hashtags:[#], cta(мягкий)}. 3-5 сцен. Без markdown.",
               "type": "string"
+            },
+            {
+              "id": "p6",
+              "name": "viral_director_system",
+              "value": "Ты вирусный креативный директор коротких видео (Shorts/Reels) для РФ, ниша питание/ЗОЖ/фитнес. На входе: выбранная идея + реально залетевшие форматы конкурентов (с просмотрами) + тренды. Разбери ПОЧЕМУ залетают эти форматы: механика хука (первые 1-2 сек), паттерн-разрыв, эмоция, любопытство-gap, удержание до конца, повод сохранить/переслать. Собери ВИРУСНЫЙ замысел под идею FoodGenius — смело, небанально, но честно (без кликбейта-обмана). Верни СТРОГО JSON: {viral_angle, hook_mechanic, hooks:[3 сильных хука на рус, каждый <=6 слов], retention_structure, emotional_trigger, why_it_spreads, payoff}. Без markdown.",
+              "type": "string"
             }
           ]
         },
@@ -194,7 +200,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ system_instruction: { parts: [{ text: $('Config').item.json.concept_system }] }, contents: [{ role: 'user', parts: [{ text: 'Идея: ' + JSON.stringify({ topic: $json.topic, angle: $json.angle, audience_segment: $json.audience_segment, food_category: $json.food_category }) }] }], generationConfig: { temperature: 0.9, responseMimeType: 'application/json' } }) }}",
+        "jsonBody": "={{ JSON.stringify({ system_instruction: { parts: [{ text: $('Config').item.json.concept_system }] }, contents: [{ role: 'user', parts: [{ text: 'Идея: ' + JSON.stringify({ topic: $('Parse idea').first().json.topic, angle: $('Parse idea').first().json.angle, audience_segment: $('Parse idea').first().json.audience_segment, food_category: $('Parse idea').first().json.food_category }) + '\\n\\nВирусный замысел креативного директора:\\n' + JSON.stringify($json) }] }], generationConfig: { temperature: 0.95, responseMimeType: 'application/json' } }) }}",
         "options": {}
       },
       "id": "f8",
@@ -644,13 +650,40 @@
         "rule": {
           "interval": [
             {
-              "field": "days",
-              "daysInterval": 1,
-              "triggerAtHour": 9,
-              "triggerAtMinute": 0
+              "field": "cronExpression",
+              "expression": "0 9,14,19 * * *"
             }
           ]
         }
+      }
+    },
+    {
+      "id": "f11",
+      "name": "Viral director",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "dh36tHYBei17CBTc",
+          "name": "Gemini API key (paid)"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 3000,
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ system_instruction: { parts: [{ text: $('Config').item.json.viral_director_system }] }, contents: [{ role: 'user', parts: [{ text: 'Идея: ' + JSON.stringify({ topic: $json.topic, angle: $json.angle }) + '\\n\\nЗалетевшие форматы конкурентов:\\n' + $('Research text').first().json.signals_text + '\\n\\nТренды:\\n' + $('Research text').first().json.trends_text }] }], generationConfig: { temperature: 1.05, responseMimeType: 'application/json' } }) }}",
+        "options": {}
       }
     }
   ],
@@ -725,7 +758,7 @@
       "main": [
         [
           {
-            "node": "Concept",
+            "node": "Viral director",
             "type": "main",
             "index": 0
           }
@@ -902,6 +935,17 @@
         [
           {
             "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Viral director": {
+      "main": [
+        [
+          {
+            "node": "Concept",
             "type": "main",
             "index": 0
           }
